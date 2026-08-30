@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Recruitment Funnel Dashboard — Cube (Intour Labs)</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap');
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #F7F7F5; --surface: #FFFFFF; --border: #E8E8E4;
+    --text-primary: #1A1A1A; --text-secondary: #6B6B6B; --text-muted: #A0A0A0;
+    --accent: #2D6A4F; --accent-light: #E8F5EE; --accent-mid: #52B788;
+    --funnel-1: #1A1A2E; --funnel-2: #2D4A7A; --funnel-3: #2D6A4F;
+    --funnel-4: #52B788; --funnel-5: #95D5B2;
+    --mono: 'DM Mono', monospace;
+  }
+  body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text-primary); min-height: 100vh; }
+  .header { background: var(--surface); border-bottom: 1px solid var(--border); padding: 20px 40px; display: flex; align-items: center; justify-content: space-between; }
+  .header-left h1 { font-size: 16px; font-weight: 600; letter-spacing: -0.3px; }
+  .header-left p { font-size: 12px; color: var(--text-secondary); margin-top: 2px; }
+  .header-right { display: flex; align-items: center; gap: 12px; }
+  .badge { font-size: 11px; font-weight: 500; padding: 4px 10px; border-radius: 20px; background: var(--accent-light); color: var(--accent); }
+  .period { font-size: 12px; color: var(--text-secondary); font-family: var(--mono); }
+  .main { padding: 32px 40px; }
+  .kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 28px; }
+  .kpi-card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 20px 22px; position: relative; overflow: hidden; }
+  .kpi-card::after { content: ''; position: absolute; top: 0; left: 0; width: 3px; height: 100%; background: var(--accent); border-radius: 10px 0 0 10px; }
+  .kpi-label { font-size: 11px; font-weight: 500; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 8px; }
+  .kpi-value { font-size: 28px; font-weight: 700; letter-spacing: -1px; color: var(--text-primary); font-family: var(--mono); }
+  .kpi-sub { font-size: 11px; color: var(--text-muted); margin-top: 4px; }
+  .kpi-delta { display: inline-block; margin-top: 6px; font-size: 11px; font-weight: 500; color: var(--accent); background: var(--accent-light); padding: 2px 7px; border-radius: 4px; }
+  .grid-2 { display: grid; grid-template-columns: 1.4fr 1fr; gap: 20px; margin-bottom: 20px; }
+  .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; }
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 24px; }
+  .card-title { font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.7px; color: var(--text-secondary); margin-bottom: 20px; }
+  .funnel-wrap { display: flex; flex-direction: column; gap: 8px; }
+  .funnel-row { display: flex; align-items: center; gap: 12px; }
+  .funnel-label { font-size: 12px; color: var(--text-secondary); width: 120px; flex-shrink: 0; }
+  .funnel-bar-wrap { flex: 1; height: 32px; background: var(--bg); border-radius: 4px; overflow: hidden; }
+  .funnel-bar { height: 100%; border-radius: 4px; display: flex; align-items: center; padding-left: 10px; transition: width 1.1s cubic-bezier(0.4,0,0.2,1); width: 0%; }
+  .funnel-bar span { font-size: 11px; font-weight: 600; color: #fff; font-family: var(--mono); white-space: nowrap; }
+  .funnel-pct { font-size: 11px; font-family: var(--mono); color: var(--text-muted); width: 42px; text-align: right; flex-shrink: 0; }
+  .conversion-note { display: flex; align-items: center; gap: 6px; margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--border); font-size: 11px; color: var(--text-secondary); }
+  .conversion-note strong { color: var(--accent); font-family: var(--mono); }
+  .chart-area { display: flex; align-items: flex-end; gap: 6px; height: 120px; }
+  .bar-group { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 0; height: 100%; justify-content: flex-end; }
+  .bar-pair { display: flex; gap: 2px; align-items: flex-end; width: 100%; }
+  .bar-item { flex: 1; border-radius: 3px 3px 0 0; transition: height 0.9s ease; min-height: 4px; }
+  .bar-listed { background: var(--funnel-2); }
+  .bar-screened { background: var(--accent-mid); opacity: 0.7; }
+  .bar-week-label { font-size: 10px; color: var(--text-muted); font-family: var(--mono); margin-top: 6px; }
+  .chart-legend { display: flex; gap: 14px; margin-bottom: 14px; }
+  .legend-item { display: flex; align-items: center; gap: 5px; font-size: 11px; color: var(--text-secondary); }
+  .legend-dot { width: 8px; height: 8px; border-radius: 2px; }
+  .role-list { display: flex; flex-direction: column; gap: 14px; }
+  .role-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; }
+  .role-name { font-size: 12px; font-weight: 500; }
+  .role-count { font-size: 12px; font-family: var(--mono); color: var(--text-secondary); }
+  .role-bar-bg { height: 6px; background: var(--bg); border-radius: 3px; overflow: hidden; }
+  .role-bar-fill { height: 100%; border-radius: 3px; background: var(--accent); transition: width 1s ease; width: 0%; }
+  .role-bar-fill.it { background: var(--funnel-2); }
+  .offer-stat { text-align: center; padding: 16px 0; }
+  .offer-big { font-size: 48px; font-weight: 700; font-family: var(--mono); color: var(--accent); letter-spacing: -2px; line-height: 1; }
+  .offer-label { font-size: 12px; color: var(--text-secondary); margin-top: 6px; }
+  .divider { height: 1px; background: var(--border); margin: 16px 0; }
+  .offer-mini-stats { display: flex; flex-direction: column; gap: 10px; }
+  .offer-mini { display: flex; justify-content: space-between; align-items: center; }
+  .offer-mini-label { font-size: 11px; color: var(--text-secondary); }
+  .offer-mini-val { font-size: 13px; font-weight: 600; font-family: var(--mono); }
+  .compliance-ring { display: flex; align-items: center; gap: 20px; }
+  .ring-wrap { position: relative; width: 80px; height: 80px; flex-shrink: 0; }
+  .ring-wrap svg { transform: rotate(-90deg); }
+  .ring-center { position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%); font-size: 14px; font-weight: 700; font-family: var(--mono); color: var(--accent); }
+  .compliance-detail p { font-size: 12px; color: var(--text-secondary); line-height: 1.6; }
+  .compliance-detail strong { color: var(--text-primary); }
+  .timeline { display: flex; flex-direction: column; }
+  .timeline-item { display: flex; gap: 14px; padding-bottom: 14px; position: relative; }
+  .timeline-item:not(:last-child)::before { content: ''; position: absolute; left: 5px; top: 14px; width: 1px; height: calc(100% - 6px); background: var(--border); }
+  .tl-dot { width: 11px; height: 11px; border-radius: 50%; background: var(--accent); flex-shrink: 0; margin-top: 3px; position: relative; z-index: 1; }
+  .tl-dot.muted { background: var(--border); }
+  .tl-title { font-size: 12px; font-weight: 500; margin-bottom: 2px; }
+  .tl-sub { font-size: 11px; color: var(--text-muted); }
+  .footer { text-align: center; padding: 20px; font-size: 11px; color: var(--text-muted); border-top: 1px solid var(--border); margin-top: 12px; }
+  @media (max-width: 900px) {
+    .kpi-row { grid-template-columns: repeat(2,1fr); }
+    .grid-2, .grid-3 { grid-template-columns: 1fr; }
+    .main { padding: 20px; }
+    .header { padding: 16px 20px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-left">
+    <h1>Recruitment Funnel Dashboard</h1>
+    <p>Cube (Intour Labs Pvt. Ltd.) — HR Internship</p>
+  </div>
+  <div class="header-right">
+    <span class="period">Jan 2026 – Feb 2026</span>
+    <span class="badge">Graphics & IT Roles</span>
+  </div>
+</div>
+
+<div class="main">
+  <div class="kpi-row">
+    <div class="kpi-card">
+      <div class="kpi-label">Candidates Listed</div>
+      <div class="kpi-value" id="kpi1">0</div>
+      <div class="kpi-sub">Total across 5 weeks</div>
+      <div class="kpi-delta">150+ / day</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">Screening Calls</div>
+      <div class="kpi-value" id="kpi2">0</div>
+      <div class="kpi-sub">Total conducted</div>
+      <div class="kpi-delta">100+ / day</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">New Hires Onboarded</div>
+      <div class="kpi-value" id="kpi3">0</div>
+      <div class="kpi-sub">Successfully joined</div>
+      <div class="kpi-delta">↑ 20+ hires</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">Offer Acceptance</div>
+      <div class="kpi-value" id="kpi4">0%</div>
+      <div class="kpi-sub">Offers accepted</div>
+      <div class="kpi-delta">Industry avg: 72%</div>
+    </div>
+  </div>
+
+  <div class="grid-2">
+    <div class="card">
+      <div class="card-title">Recruitment Funnel</div>
+      <div class="funnel-wrap">
+        <div class="funnel-row">
+          <div class="funnel-label">Candidates Listed</div>
+          <div class="funnel-bar-wrap"><div class="funnel-bar" style="background:var(--funnel-1)" data-w="100%"><span>3,750</span></div></div>
+          <div class="funnel-pct">100%</div>
+        </div>
+        <div class="funnel-row">
+          <div class="funnel-label">Screened (Calls)</div>
+          <div class="funnel-bar-wrap"><div class="funnel-bar" style="background:var(--funnel-2)" data-w="66%"><span>2,500</span></div></div>
+          <div class="funnel-pct">66%</div>
+        </div>
+        <div class="funnel-row">
+          <div class="funnel-label">Shortlisted</div>
+          <div class="funnel-bar-wrap"><div class="funnel-bar" style="background:var(--funnel-3)" data-w="38%"><span>1,420</span></div></div>
+          <div class="funnel-pct">38%</div>
+        </div>
+        <div class="funnel-row">
+          <div class="funnel-label">Offers Extended</div>
+          <div class="funnel-bar-wrap"><div class="funnel-bar" style="background:var(--funnel-4)" data-w="18%"><span>680</span></div></div>
+          <div class="funnel-pct">18%</div>
+        </div>
+        <div class="funnel-row">
+          <div class="funnel-label">Joined</div>
+          <div class="funnel-bar-wrap"><div class="funnel-bar" style="background:var(--funnel-5)" data-w="8%"><span style="color:#333">24</span></div></div>
+          <div class="funnel-pct">0.6%</div>
+        </div>
+      </div>
+      <div class="conversion-note">
+        <span>Overall funnel conversion: <strong>0.64%</strong></span>
+        <span style="margin-left:auto">Offer acceptance: <strong>85%</strong></span>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Weekly Sourcing Volume</div>
+      <div class="chart-legend">
+        <div class="legend-item"><div class="legend-dot" style="background:var(--funnel-2)"></div>Listed</div>
+        <div class="legend-item"><div class="legend-dot" style="background:var(--accent-mid)"></div>Screened</div>
+      </div>
+      <div class="chart-area" id="weeklyChart"></div>
+    </div>
+  </div>
+
+  <div class="grid-3">
+    <div class="card">
+      <div class="card-title">Role Breakdown</div>
+      <div class="role-list">
+        <div>
+          <div class="role-header"><span class="role-name">Graphics Design</span><span class="role-count">2,100</span></div>
+          <div class="role-bar-bg"><div class="role-bar-fill" data-w="56%"></div></div>
+        </div>
+        <div>
+          <div class="role-header"><span class="role-name">IT / Tech</span><span class="role-count">1,650</span></div>
+          <div class="role-bar-bg"><div class="role-bar-fill it" data-w="44%"></div></div>
+        </div>
+        <div class="divider"></div>
+        <div>
+          <div class="role-header"><span class="role-name" style="font-weight:400;color:var(--text-secondary)">Graphics — Hired</span><span class="role-count">14</span></div>
+          <div class="role-bar-bg"><div class="role-bar-fill" data-w="58%" style="opacity:0.5"></div></div>
+        </div>
+        <div>
+          <div class="role-header"><span class="role-name" style="font-weight:400;color:var(--text-secondary)">IT — Hired</span><span class="role-count">10</span></div>
+          <div class="role-bar-bg"><div class="role-bar-fill it" data-w="42%" style="opacity:0.5"></div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Offer Acceptance Rate</div>
+      <div class="offer-stat">
+        <div class="offer-big">85%</div>
+        <div class="offer-label">vs. 72% industry average</div>
+      </div>
+      <div class="divider"></div>
+      <div class="offer-mini-stats">
+        <div class="offer-mini"><span class="offer-mini-label">Offers Extended</span><span class="offer-mini-val">28</span></div>
+        <div class="offer-mini"><span class="offer-mini-label">Accepted</span><span class="offer-mini-val">24</span></div>
+        <div class="offer-mini"><span class="offer-mini-label">Declined</span><span class="offer-mini-val">4</span></div>
+        <div class="offer-mini"><span class="offer-mini-label">Follow-up Compliance</span><span class="offer-mini-val" style="color:var(--accent)">100%</span></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Process & Compliance</div>
+      <div class="compliance-ring">
+        <div class="ring-wrap">
+          <svg width="80" height="80" viewBox="0 0 80 80">
+            <circle cx="40" cy="40" r="32" fill="none" stroke="var(--border)" stroke-width="8"/>
+            <circle cx="40" cy="40" r="32" fill="none" stroke="var(--accent)" stroke-width="8"
+              stroke-dasharray="201" stroke-dashoffset="0" stroke-linecap="round"/>
+          </svg>
+          <div class="ring-center">100%</div>
+        </div>
+        <div class="compliance-detail">
+          <p>Maintained <strong>100% follow-up rate</strong> across all screened candidates with zero dropped leads.</p>
+        </div>
+      </div>
+      <div class="divider"></div>
+      <div class="timeline">
+        <div class="timeline-item">
+          <div class="tl-dot"></div>
+          <div><div class="tl-title">Sourcing & listing</div><div class="tl-sub">150+ profiles/day across job boards</div></div>
+        </div>
+        <div class="timeline-item">
+          <div class="tl-dot"></div>
+          <div><div class="tl-title">Screening calls</div><div class="tl-sub">100+ calls/day, structured evaluation</div></div>
+        </div>
+        <div class="timeline-item">
+          <div class="tl-dot"></div>
+          <div><div class="tl-title">Offer & onboarding</div><div class="tl-sub">20+ hires, 85% acceptance rate</div></div>
+        </div>
+        <div class="timeline-item">
+          <div class="tl-dot muted"></div>
+          <div><div class="tl-title" style="color:var(--text-muted)">Post-joining check-ins</div><div class="tl-sub">Engagement & retention follow-up</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="footer">Angela Horo · HR Internship · Cube (Intour Labs Pvt. Ltd.) · Jan–Feb 2026 · Data simulated based on daily averages reported</div>
+
+<script>
+  function animateCount(id, target, suffix, duration) {
+    const el = document.getElementById(id);
+    let start = 0;
+    const step = target / (duration / 16);
+    const timer = setInterval(() => {
+      start = Math.min(start + step, target);
+      el.textContent = Math.floor(start).toLocaleString() + suffix;
+      if (start >= target) clearInterval(timer);
+    }, 16);
+  }
+  setTimeout(() => {
+    animateCount('kpi1', 3750, '', 1400);
+    animateCount('kpi2', 2500, '', 1400);
+    animateCount('kpi3', 24, '', 1000);
+    animateCount('kpi4', 85, '%', 1200);
+  }, 300);
+
+  setTimeout(() => {
+    document.querySelectorAll('.funnel-bar').forEach(b => b.style.width = b.dataset.w);
+    document.querySelectorAll('.role-bar-fill').forEach(b => b.style.width = b.dataset.w);
+  }, 500);
+
+  const weeks = [
+    { label: 'W1', listed: 680, screened: 420 },
+    { label: 'W2', listed: 750, screened: 480 },
+    { label: 'W3', listed: 820, screened: 540 },
+    { label: 'W4', listed: 790, screened: 520 },
+    { label: 'W5', listed: 710, screened: 540 },
+  ];
+  const maxVal = Math.max(...weeks.map(w => w.listed));
+  const chartEl = document.getElementById('weeklyChart');
+  weeks.forEach(w => {
+    const group = document.createElement('div');
+    group.className = 'bar-group';
+    const pair = document.createElement('div');
+    pair.className = 'bar-pair';
+    const b1 = document.createElement('div');
+    b1.className = 'bar-item bar-listed';
+    b1.style.height = '0px';
+    b1.style.transition = 'height 0.9s ease';
+    const b2 = document.createElement('div');
+    b2.className = 'bar-item bar-screened';
+    b2.style.height = '0px';
+    b2.style.transition = 'height 0.9s ease 0.1s';
+    pair.appendChild(b1);
+    pair.appendChild(b2);
+    const lbl = document.createElement('div');
+    lbl.className = 'bar-week-label';
+    lbl.textContent = w.label;
+    group.appendChild(pair);
+    group.appendChild(lbl);
+    chartEl.appendChild(group);
+    setTimeout(() => {
+      b1.style.height = (w.listed / maxVal * 100) + 'px';
+      b2.style.height = (w.screened / maxVal * 100) + 'px';
+    }, 600);
+  });
+</script>
+</body>
+</html>
